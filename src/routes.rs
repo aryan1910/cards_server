@@ -24,7 +24,7 @@ async fn get_all_translations() -> impl Responder {
 
 #[get("/translation/random")]
 async fn get_random_translation() -> impl Responder {
-    let random_number = rand::thread_rng().gen_range(0..TRANSLATIONS.len() as i32);
+    let random_number = rand::rng().random_range(0..TRANSLATIONS.len() as i32);
 
     if let Some(translation) = TRANSLATIONS.get(&random_number) {
         HttpResponse::Ok().json(translation) // Semicolon here will return ()
