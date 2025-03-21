@@ -35,17 +35,14 @@ async fn get_random_translation() -> impl Responder {
 
 #[get("/translation")]
 async fn get_translation(query: web::Query<HashMap<String, String>>) -> impl Responder {
-    if let Some(id_str) = query.get("id") {
-        if let Ok(id) = id_str.parse::<i32>() {
-            if let Some(translation) = TRANSLATIONS.get(&id) {
-                return HttpResponse::Ok().json(translation);
-            } else {
-                HttpResponse::NotFound().body("translation not found")
-            }
-        } else {
-            HttpResponse::NotFound().body("invalid id")
-        }
-    } else {
-        HttpResponse::NotFound().body("id not found")
+    let translation = query
+        .get("id")
+        .ok_or("id not found")
+        .and_then(|v| v.parse::<i32>().map_err(|_| "invalid_id"))
+        .and_then(|id| TRANSLATIONS.get(&id).ok_or("translation not found"));
+
+    match translation {
+        Ok(translation) => HttpResponse::Ok().json(translation),
+        Err(message) => HttpResponse::NotFound().body(message),
     }
 }
