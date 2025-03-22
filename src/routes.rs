@@ -3,6 +3,7 @@ use crate::{data::csv_reader, models::DataProvider};
 use actix_web::{get, web, HttpResponse, Responder};
 use lazy_static::lazy_static;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 lazy_static! {
@@ -33,16 +34,22 @@ async fn get_random_translation() -> impl Responder {
     }
 }
 
-#[get("/translation")]
-async fn get_translation(query: web::Query<HashMap<String, String>>) -> impl Responder {
-    let translation = query
-        .get("id")
-        .ok_or("id not found")
-        .and_then(|v| v.parse::<i32>().map_err(|_| "invalid id"))
-        .and_then(|id| TRANSLATIONS.get(&id).ok_or("translation not found"));
+#[derive(Deserialize)]
+struct TranslationRequest {
+    id: i32,
+}
 
-    match translation {
-        Ok(translation) => HttpResponse::Ok().json(translation),
-        Err(message) => HttpResponse::NotFound().body(message),
+#[derive(Serialize)]
+struct TranslationError {
+    error: &'static str,
+}
+
+#[get("/translation")]
+async fn get_translation(query: web::Query<TranslationRequest>) -> impl Responder {
+    match TRANSLATIONS.get(&query.id) {
+        Some(translation) => HttpResponse::Ok().json(translation),
+        None => HttpResponse::NotFound().json(TranslationError {
+            error: "translation not found",
+        }),
     }
 }
