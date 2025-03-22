@@ -38,7 +38,7 @@ async fn get_translation(query: web::Query<HashMap<String, String>>) -> impl Res
     let translation = query
         .get("id")
         .ok_or("id not found")
-        .and_then(|v| v.parse::<i32>().map_err(|_| "invalid_id"))
+        .and_then(|v| v.parse::<i32>().map_err(|_| "invalid id"))
         .and_then(|id| TRANSLATIONS.get(&id).ok_or("translation not found"));
 
     match translation {
