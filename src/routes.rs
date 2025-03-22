@@ -3,6 +3,7 @@ use crate::{data::csv_reader, models::DataProvider};
 use actix_web::{get, web, HttpResponse, Responder};
 use lazy_static::lazy_static;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 lazy_static! {
@@ -24,7 +25,7 @@ async fn get_all_translations() -> impl Responder {
 
 #[get("/translation/random")]
 async fn get_random_translation() -> impl Responder {
-    let random_number = rand::thread_rng().gen_range(0..TRANSLATIONS.len() as i32);
+    let random_number = rand::rng().random_range(0..TRANSLATIONS.len() as i32);
 
     if let Some(translation) = TRANSLATIONS.get(&random_number) {
         HttpResponse::Ok().json(translation) // Semicolon here will return ()
@@ -33,19 +34,22 @@ async fn get_random_translation() -> impl Responder {
     }
 }
 
+#[derive(Deserialize)]
+struct TranslationRequest {
+    id: i32,
+}
+
+#[derive(Serialize)]
+struct TranslationError {
+    error: &'static str,
+}
+
 #[get("/translation")]
-async fn get_translation(query: web::Query<HashMap<String, String>>) -> impl Responder {
-    if let Some(id_str) = query.get("id") {
-        if let Ok(id) = id_str.parse::<i32>() {
-            if let Some(translation) = TRANSLATIONS.get(&id) {
-                return HttpResponse::Ok().json(translation);
-            } else {
-                HttpResponse::NotFound().body("translation not found")
-            }
-        } else {
-            HttpResponse::NotFound().body("invalid id")
-        }
-    } else {
-        HttpResponse::NotFound().body("id not found")
+async fn get_translation(query: web::Query<TranslationRequest>) -> impl Responder {
+    match TRANSLATIONS.get(&query.id) {
+        Some(translation) => HttpResponse::Ok().json(translation),
+        None => HttpResponse::NotFound().json(TranslationError {
+            error: "translation not found",
+        }),
     }
 }
